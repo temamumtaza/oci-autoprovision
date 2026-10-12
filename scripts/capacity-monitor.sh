@@ -64,7 +64,7 @@ SPEND_JSON=""
 if SPEND_JSON=$(oci_get usage-api usage-summary request-summarized-usages --tenant-id "$TENANCY" \
   --time-usage-started "$(date -u -d '7 days ago' '+%Y-%m-%dT00:00:00Z')" \
   --time-usage-ended "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" \
-  --granularity MONTHLY --query-type COST \
+  --granularity MONTHLY \
   --query 'data.items[*]."computed-cost"'); then
   if [ -n "$SPEND_JSON" ]; then
   SPEND=$(printf '%s' "$SPEND_JSON" | python3 -c '
