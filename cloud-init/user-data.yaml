@@ -1,0 +1,50 @@
+#cloud-config
+# Bootstrap VM hermes-a1-lab (Ubuntu 24.04 ARM64, OCI Always Free)
+# Ringan: tanpa full-upgrade, tanpa service berat. Hermes diinstal via installer resmi.
+package_update: true
+package_upgrade: false
+packages:
+  - ufw
+  - jq
+  - git
+  - curl
+  - htop
+  - chrony
+
+write_files:
+  - path: /etc/ssh/sshd_config.d/60-hermes-lab.conf
+    permissions: '0644'
+    content: |
+      # hardening tambahan (default Ubuntu cloud image sudah no-password)
+      PasswordAuthentication no
+      KbdInteractiveAuthentication no
+      MaxAuthTries 4
+      ClientAliveInterval 120
+      ClientAliveCountMax 3
+  - path: /etc/sysctl.d/70-hermes-lab.conf
+    permissions: '0644'
+    content: |
+      # hemat resource untuk VM kecil
+      vm.swappiness=10
+      net.core.somaxconn=1024
+
+runcmd:
+  # SSH hardening reload (port 22 tetap terbuka untuk akses publik)
+  - systemctl reload ssh || systemctl reload sshd || true
+  # firewall: hanya SSH dari luar; trafik lain via Tailscale nanti
+  - ufw allow OpenSSH
+  - ufw --force enable
+  # workspace projects
+  - mkdir -p /opt/projects && chown ubuntu:ubuntu /opt/projects
+  - ln -sfn /opt/projects /home/ubuntu/projects
+  - chown -h ubuntu:ubuntu /home/ubuntu/projects
+  # Tailscale binary (aktivasi `tailscale up` dilakukan terpisah — butuh login user)
+  - curl -fsSL https://tailscale.com/install.sh | sh > /var/log/tailscale-install.log 2>&1
+  # Hermes via installer resmi, user ubuntu, tanpa migrasi token/data
+  - >
+    sudo -u ubuntu bash -c
+    'curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash'
+    > /var/log/hermes-install.log 2>&1 || true
+  - echo "bootstrap done $(date -Is)" > /var/log/hermes-lab-bootstrap.log
+
+final_message: "HERMES-LAB BOOTSTRAP COMPLETE after $UPTIME seconds"
