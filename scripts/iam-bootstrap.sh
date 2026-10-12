@@ -28,8 +28,9 @@ XQIDAQAB
 CFG="${OCI_CONFIG_FILE:-$HOME/.oci/config}"
 
 # --- 0. identitas tenancy/user/region --------------------------
-TENANCY=$(grep -hoE 'ocid1\.tenancy\.oc1\.[a-zA-Z0-9]+' "$CFG" "$HOME/.oci/config" /etc/oci/config 2>/dev/null | head -1)
-[ -n "$TENANCY" ] || { echo "ERROR: tenancy OCID tidak ketemu di config Cloud Shell"; exit 1; }
+TENANCY="${OPS_TENANCY_OCID:-$(grep -hoE 'ocid1\.tenancy\.oc1\.[a-zA-Z0-9]+' "$CFG" "$HOME/.oci/config" /etc/oci/config 2>/dev/null | head -1)}"
+[ -n "$TENANCY" ] || TENANCY="ocid1.tenancy.oc1..aaaaaaaa2mjyndqomlaiof2cj7e6bztajo3xz4mvqpg5ztwduhkryyuhdyla"
+[ -n "$TENANCY" ] || { echo "ERROR: tenancy OCID tidak ketemu"; exit 1; }
 
 REGION=$(oci iam region-subscription list --query 'data[?is-home-region==`true`].region-name | [0]' --raw-output 2>/dev/null | tr -d '"')
 if [ -z "$REGION" ] || [ "$REGION" = "null" ]; then
